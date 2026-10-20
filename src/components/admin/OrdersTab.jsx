@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, Filter, Truck, CheckCircle, Clock } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export default function OrdersTab({ orders, onUpdateOrderStatus }) {
   const [filter, setFilter] = useState('all');

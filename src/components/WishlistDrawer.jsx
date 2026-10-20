@@ -4,7 +4,7 @@ import { PRODUCTS } from '../data/badmintonData';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function WishlistDrawer({ isOpen, onClose, wishlist, onRemoveFromWishlist, onAddToCart }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 

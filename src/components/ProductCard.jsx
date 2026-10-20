@@ -16,11 +16,18 @@ export default function ProductCard({
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
     : 0;
 
+  const isOutOfStock = (product.stockCount !== undefined && product.stockCount <= 0) || product.inStock === false;
+  const isLowStock = !isOutOfStock && product.stockCount !== undefined && product.stockCount <= 5;
+
   return (
-    <div className="product-card">
+    <div className={`product-card ${isOutOfStock ? 'card-out-of-stock' : ''}`}>
       {/* Top Badges & Wishlist */}
       <div className="product-card-badges">
-        {product.badge && (
+        {isOutOfStock ? (
+          <span className="product-badge badge-out-of-stock">
+            {lang === 'km' ? 'ដាច់ស្តុក' : 'OUT OF STOCK'}
+          </span>
+        ) : product.badge ? (
           <span className={`product-badge ${product.badge.toLowerCase().includes('deal') || product.badge.includes('OFF') ? 'badge-deal' : 'badge-regular'}`}>
             {lang === 'km' && product.badge.includes('OFF') 
               ? `បញ្ចុះ ${discountPercent}%` 
@@ -28,7 +35,7 @@ export default function ProductCard({
                 ? 'លក់ដាច់បំផុត' 
                 : product.badge}
           </span>
-        )}
+        ) : null}
         <button 
           className={`btn-wishlist-toggle ${isWishlisted ? 'active' : ''}`}
           onClick={() => onToggleWishlist(product.id)}
@@ -103,7 +110,7 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Price Row */}
+        {/* Price Row & Low Stock Urgency */}
         <div className="product-card-pricing">
           <div className="price-container">
             <span className="current-price">${product.price.toFixed(2)}</span>
@@ -111,12 +118,20 @@ export default function ProductCard({
               <span className="list-price">${product.originalPrice.toFixed(2)}</span>
             )}
           </div>
-          {discountPercent > 0 && (
+          {discountPercent > 0 && !isOutOfStock && (
             <span className="save-tag">
               {lang === 'km' ? `ចំណេញ ${discountPercent}%` : `Save ${discountPercent}%`}
             </span>
           )}
         </div>
+
+        {/* Live Stock Urgency Indicator */}
+        {isLowStock && (
+          <div className="card-stock-warning">
+            <span className="low-stock-pulse"></span>
+            <span>{lang === 'km' ? `នៅសល់តែ ${product.stockCount} គ្រឿងទៀតប៉ុណ្ណោះ!` : `Only ${product.stockCount} left in stock!`}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="product-card-actions">
@@ -132,11 +147,16 @@ export default function ProductCard({
           )}
 
           <button 
-            className="btn-card-add-cart"
-            onClick={() => onAddToCart(product.id)}
+            className={`btn-card-add-cart ${isOutOfStock ? 'btn-out-stock' : ''}`}
+            onClick={() => !isOutOfStock && onAddToCart(product.id)}
+            disabled={isOutOfStock}
           >
             <ShoppingCart size={15} />
-            <span>{t('product.addToCart')}</span>
+            <span>
+              {isOutOfStock 
+                ? (lang === 'km' ? 'ដាច់ស្តុក' : 'Out of Stock') 
+                : t('product.addToCart')}
+            </span>
           </button>
         </div>
       </div>

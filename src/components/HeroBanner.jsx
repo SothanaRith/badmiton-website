@@ -1,4 +1,4 @@
-import { Star, ShieldCheck, ArrowRight, Zap, ChevronRight, ChevronLeft, Heart, Wrench, Footprints } from 'lucide-react';
+import { Star, ShieldCheck, ArrowRight, Zap, ChevronRight, Heart, Wrench, Footprints } from 'lucide-react';
 import { QUICK_RECOMMENDATIONS } from '../data/badmintonData';
 import { BadmintonIcon } from './BadmintonIcon';
 import { useLanguage } from '../context/LanguageContext';

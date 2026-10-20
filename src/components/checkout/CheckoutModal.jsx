@@ -10,13 +10,13 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   Printer, 
-  ShieldCheck,
-  ShoppingBag
+  ShieldCheck
 } from 'lucide-react';
 import DeliveryMethod from './DeliveryMethod';
 import KhqrPaymentPanel from './KhqrPaymentPanel';
 import { CAMBODIA_PROVINCES, DEFAULT_DELIVERY_PROVIDERS, DEFAULT_FREE_DELIVERY_THRESHOLD } from '../../data/deliveryData';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CheckoutModal({ 
   isOpen, 
@@ -27,17 +27,16 @@ export default function CheckoutModal({
   freeDeliveryThreshold = DEFAULT_FREE_DELIVERY_THRESHOLD
 }) {
   const { t, lang } = useLanguage();
-
-  if (!isOpen) return null;
+  const { currentUser } = useAuth();
 
   // Step 1: info, 2: delivery, 3: payment, 4: review, 5: success
   const [currentStep, setCurrentStep] = useState(1);
 
   // Customer Form
-  const [customerName, setCustomerName] = useState('Narith Chea');
-  const [phone, setPhone] = useState('012 888 999');
-  const [province, setProvince] = useState('Phnom Penh');
-  const [address, setAddress] = useState('Street 2004, Sangkat Teuk Thla, Khan Sen Sok (Next to Court 4)');
+  const [customerName, setCustomerName] = useState(currentUser?.name || 'Narith Chea');
+  const [phone, setPhone] = useState(currentUser?.phone || '012 888 999');
+  const [province, setProvince] = useState(currentUser?.province || 'Phnom Penh');
+  const [address, setAddress] = useState(currentUser?.address || 'Street 2004, Sangkat Teuk Thla, Khan Sen Sok (Next to Court 4)');
   const [orderNotes, setOrderNotes] = useState('Please call when courier arrives at court.');
 
   // Delivery Provider Selection
@@ -48,6 +47,26 @@ export default function CheckoutModal({
 
   // Completed Order State
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [checkoutOrderId, setCheckoutOrderId] = useState(() => `SZ-${Math.floor(100000 + Math.random() * 900000)}`);
+
+  // Sync state if currentUser changes
+  React.useEffect(() => {
+    if (currentUser) {
+      if (currentUser.name) setCustomerName(currentUser.name);
+      if (currentUser.phone) setPhone(currentUser.phone);
+      if (currentUser.province) setProvince(currentUser.province);
+      if (currentUser.address) setAddress(currentUser.address);
+    }
+  }, [currentUser]);
+
+  // Refresh order ID whenever modal opens cleanly for a new order
+  React.useEffect(() => {
+    if (isOpen && currentStep === 1) {
+      setCheckoutOrderId(`SZ-${Math.floor(100000 + Math.random() * 900000)}`);
+    }
+  }, [isOpen, currentStep]);
+
+  if (!isOpen) return null;
 
   // Financial calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -57,8 +76,8 @@ export default function CheckoutModal({
   const deliveryFee = (isFreeDelivery || selectedProvider.feeUSD === 0) ? 0 : selectedProvider.feeUSD;
   const totalAmount = subtotal + deliveryFee;
 
-  const handlePlaceOrder = (isKhqrPaid = false) => {
-    const orderNumber = `SZ-${Math.floor(100000 + Math.random() * 900000)}`;
+  const handlePlaceOrder = (_isKhqrPaid = false) => {
+    const orderNumber = checkoutOrderId;
     const newOrder = {
       id: orderNumber,
       customer: customerName,
@@ -66,6 +85,7 @@ export default function CheckoutModal({
       province,
       address,
       items: cart.map(item => ({
+        id: item.id,
         name: item.name,
         qty: item.quantity,
         price: item.price,
@@ -291,7 +311,7 @@ export default function CheckoutModal({
               {/* Render KHQR Panel if chosen */}
               {paymentMethod === 'khqr' && (
                 <KhqrPaymentPanel
-                  orderNumber={`SZ-${Math.floor(100000 + Math.random() * 900000)}`}
+                  orderNumber={checkoutOrderId}
                   amountUsd={totalAmount}
                   onSuccess={() => handlePlaceOrder(true)}
                 />

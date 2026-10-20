@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { QrCode, CheckCircle2, ShieldCheck, Clock, RefreshCw, Smartphone } from 'lucide-react';
+import { QrCode, CheckCircle2, Clock, RefreshCw, Smartphone } from 'lucide-react';
 import { KHR_EXCHANGE_RATE } from '../../data/deliveryData';
 import { useLanguage } from '../../context/LanguageContext';
 

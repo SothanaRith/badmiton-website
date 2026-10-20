@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { X, Plus, Package, Sparkles } from 'lucide-react';
+import { X, Package, Sparkles } from 'lucide-react';
 
 export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
-  if (!isOpen) return null;
-
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('Yonex');
   const [category, setCategory] = useState('rackets');
   const [price, setPrice] = useState('239.00');
   const [originalPrice, setOriginalPrice] = useState('279.00');
   const [stockCount, setStockCount] = useState(15);
-  const [badge, setBadge] = useState('NEW ARRIVAL');
+  const [badge] = useState('NEW ARRIVAL');
   const [image, setImage] = useState('/images/hero-racket.jpg');
 
   // Racket specs
@@ -20,6 +18,8 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }) {
   const [tensionMax, setTensionMax] = useState('29 lbs');
   const [smashPower, setSmashPower] = useState(94);
   const [controlSpeed, setControlSpeed] = useState(92);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -5,11 +5,8 @@ import {
   CheckCircle, 
   Truck, 
   Plus, 
-  AlertCircle, 
   Gauge, 
   User, 
-  ArrowRight,
-  Sparkles,
   X
 } from 'lucide-react';
 

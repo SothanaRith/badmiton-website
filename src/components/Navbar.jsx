@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, 
   ShoppingCart, 
@@ -7,16 +7,20 @@ import {
   Scale, 
   ChevronDown, 
   Menu, 
-  X,
-  Sparkles,
-  PhoneCall,
-  ShieldCheck,
-  Truck,
-  Flame
+  X, 
+  Sparkles, 
+  PhoneCall, 
+  ShieldCheck, 
+  Truck, 
+  Flame,
+  User,
+  LogOut,
+  Wrench
 } from 'lucide-react';
 import { BadmintonIcon } from './BadmintonIcon';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ 
   cartCount, 
@@ -27,6 +31,7 @@ export default function Navbar({
   onOpenCompare,
   onOpenAdmin,
   onOpenTrackOrder,
+  onOpenAuth,
   searchQuery,
   setSearchQuery,
   selectedCategory,
@@ -34,78 +39,277 @@ export default function Navbar({
   onScrollToSection
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
   const { t, lang } = useLanguage();
+  const { currentUser, logout, isAdmin, isSuperAdmin } = useAuth();
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
-    <header className="navbar-wrapper">
-      {/* Top utility strip */}
-      <div className="navbar-top-strip">
-        <div className="container strip-content">
-          <div className="strip-left">
-            <span className="strip-item">
-              <MapPin size={13} className="text-accent" />
-              <span>{t('nav.deliverTo')}: <strong>{t('nav.defaultLocation')}</strong></span>
-            </span>
-            <span className="strip-divider">|</span>
-            <span className="strip-item">
-              <PhoneCall size={13} />
-              <span>{t('nav.hotline')}: <strong>+855 23 999 888</strong></span>
-            </span>
+    <header className="navbar-wrapper modern-single-nav">
+      <div className="container nav-single-container">
+        {/* Brand Logo */}
+        <div className="brand-logo" onClick={() => onScrollToSection('hero')}>
+          <div className="logo-icon">
+            <BadmintonIcon size={26} color="#ff9900" />
           </div>
-          <div className="strip-right">
-            {/* Bilingual Language Switcher EN | ខ្មែរ */}
-            <LanguageSwitcher variant="compact" />
-            <span className="strip-divider">|</span>
-            <span className="strip-item badge-pill">
-              <Sparkles size={12} />
-              <span>{t('nav.freeRestringPromo')}</span>
-            </span>
-            <span className="strip-divider">|</span>
-            <button className="strip-item cursor-pointer text-hover-white" onClick={onOpenTrackOrder}>
-              <Truck size={13} />
-              <span>{t('nav.trackOrder')}</span>
-            </button>
-            <span className="strip-divider">|</span>
-            <button className="strip-item cursor-pointer badge-admin-portal" onClick={onOpenAdmin}>
-              <ShieldCheck size={13} className="text-orange" />
-              <span>{t('nav.adminPortal')}</span>
-            </button>
+          <div className="logo-text">
+            <span className="brand-name">SMASH<span className="accent-orange">ZONE</span></span>
+            <span className="brand-tagline">PRO STORE</span>
           </div>
+        </div>
+
+        {/* Desktop Nav Links */}
+        <nav className="desktop-nav-links">
+          <button 
+            className={`nav-link-btn ${selectedCategory === 'rackets' ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedCategory('rackets');
+              onScrollToSection('specs-filter');
+            }}
+          >
+            {t('nav.rackets')}
+          </button>
+          <button 
+            className={`nav-link-btn ${selectedCategory === 'shoes' ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedCategory('shoes');
+              onScrollToSection('products');
+            }}
+          >
+            {t('nav.shoes')}
+          </button>
+          <button 
+            className={`nav-link-btn ${selectedCategory === 'shuttles' ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedCategory('shuttles');
+              onScrollToSection('products');
+            }}
+          >
+            {t('nav.shuttles')}
+          </button>
+          <button 
+            className={`nav-link-btn ${selectedCategory === 'bags' ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedCategory('bags');
+              onScrollToSection('products');
+            }}
+          >
+            {t('nav.bags')}
+          </button>
+          <button 
+            className="nav-link-btn nav-link-highlight"
+            onClick={() => onScrollToSection('specs-filter')}
+          >
+            <Sparkles size={14} className="text-orange" />
+            <span>{t('nav.racketLab')}</span>
+          </button>
+        </nav>
+
+        {/* Search input */}
+        <div className="navbar-search modern-search">
+          <input 
+            type="text" 
+            className="search-input"
+            placeholder={t('nav.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button className="search-submit-btn" aria-label="Search equipment">
+            <Search size={16} />
+          </button>
+        </div>
+
+        {/* Right Actions: Lang Switcher, User Auth, Track, Wishlist, Compare, Cart */}
+        <div className="navbar-actions modern-actions">
+          {/* Language Switcher */}
+          <LanguageSwitcher variant="compact" />
+
+          {/* User Auth Profile Button */}
+          {!currentUser ? (
+            <button 
+              className="action-auth-btn"
+              onClick={() => onOpenAuth('login')}
+              title={t('auth.login')}
+            >
+              <User size={17} />
+              <span className="auth-btn-text">{t('auth.login')}</span>
+            </button>
+          ) : (
+            <div className="user-profile-menu-wrap" ref={userMenuRef}>
+              <button 
+                className="user-profile-pill-btn"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                aria-label="User account menu"
+              >
+                <div className="user-avatar-circle">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="user-display-name">{currentUser.name.split(' ')[0]}</span>
+                {isAdmin && (
+                  <span className={`role-badge ${isSuperAdmin ? 'role-super' : 'role-admin'}`}>
+                    {isSuperAdmin ? 'SUPER' : 'ADMIN'}
+                  </span>
+                )}
+                <ChevronDown size={14} className="user-arrow" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="user-dropdown-menu animate-slide-down">
+                  <div className="dropdown-user-info">
+                    <span className="dropdown-name">{currentUser.name}</span>
+                    <span className="dropdown-email">{currentUser.email}</span>
+                    <span className={`dropdown-role-tag ${isSuperAdmin ? 'role-super' : (isAdmin ? 'role-admin' : 'role-customer')}`}>
+                      {isSuperAdmin ? t('auth.roleSuperAdmin') : (isAdmin ? t('auth.roleAdmin') : t('auth.roleCustomer'))}
+                    </span>
+                  </div>
+
+                  <div className="dropdown-divider"></div>
+
+                  {/* ONLY SHOW ADMIN PORTAL IF ROLE IS ADMIN OR SUPER ADMIN! */}
+                  {isAdmin && (
+                    <button 
+                      className="dropdown-item dropdown-admin-item"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        onOpenAdmin();
+                      }}
+                    >
+                      <ShieldCheck size={16} className="text-orange" />
+                      <span>{t('nav.adminPortal')}</span>
+                    </button>
+                  )}
+
+                  <button 
+                    className="dropdown-item"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      onOpenTrackOrder();
+                    }}
+                  >
+                    <Truck size={16} />
+                    <span>{t('auth.myOrders')}</span>
+                  </button>
+
+                  <button 
+                    className="dropdown-item text-red"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                    }}
+                  >
+                    <LogOut size={16} />
+                    <span>{t('auth.logout')}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Track order */}
+          <button 
+            className="action-icon-btn" 
+            onClick={onOpenTrackOrder}
+            title={t('nav.trackOrder')}
+            aria-label="Track order"
+          >
+            <Truck size={19} />
+          </button>
+
+          {/* Compare */}
+          {compareItems.length > 0 && (
+            <button 
+              className="action-icon-btn compare-icon-btn active"
+              onClick={onOpenCompare}
+              title={t('nav.compare')}
+            >
+              <Scale size={19} />
+              <span className="badge-count">{compareItems.length}</span>
+            </button>
+          )}
+
+          {/* Wishlist */}
+          <button 
+            className="action-icon-btn"
+            onClick={onOpenWishlist}
+            title={t('nav.wishlist')}
+            aria-label="Wishlist"
+          >
+            <Heart size={19} />
+            {wishlistCount > 0 && (
+              <span className="badge-count">{wishlistCount}</span>
+            )}
+          </button>
+
+          {/* Cart */}
+          <button 
+            className="action-pill-btn cart-pill-btn"
+            onClick={onOpenCart}
+            title={t('nav.cart')}
+          >
+            <ShoppingCart size={18} />
+            <span className="cart-pill-count">{cartCount}</span>
+          </button>
+
+          {/* Mobile hamburger */}
+          <button 
+            className="mobile-hamburger-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
       </div>
 
-      {/* Main navigation row */}
-      <div className="navbar-main">
-        <div className="container main-content">
-          {/* Brand Logo */}
-          <div className="brand-logo" onClick={() => onScrollToSection('hero')}>
-            <div className="logo-icon">
-              <BadmintonIcon size={26} color="#ff9900" />
-            </div>
-            <div className="logo-text">
-              <span className="brand-name">SMASH<span className="accent-orange">ZONE</span></span>
-              <span className="brand-tagline">PRO BADMINTON STORE</span>
-            </div>
+      {/* Mobile Drawer Navigation */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav-drawer animate-slide-down">
+          {/* User status in mobile drawer */}
+          <div className="mobile-auth-strip">
+            {!currentUser ? (
+              <button 
+                className="btn btn-primary btn-full-width"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAuth('login');
+                }}
+              >
+                <User size={16} />
+                <span>{t('auth.login')} / {t('auth.register')}</span>
+              </button>
+            ) : (
+              <div className="mobile-logged-user">
+                <div>
+                  <strong>{currentUser.name}</strong>
+                  <div className="text-muted text-xs">{currentUser.email}</div>
+                </div>
+                <button 
+                  className="btn btn-sm btn-outline text-red"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                >
+                  <LogOut size={14} />
+                  <span>{t('auth.logout')}</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Search bar with category dropdown */}
-          <div className="navbar-search">
-            <div className="search-category-select">
-              <select 
-                value={selectedCategory} 
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                aria-label="Filter by category"
-              >
-                <option value="all">{t('nav.allGear')}</option>
-                <option value="rackets">{t('nav.rackets')}</option>
-                <option value="shoes">{t('nav.shoes')}</option>
-                <option value="shuttles">{t('nav.shuttles')}</option>
-                <option value="bags">{t('nav.bags')}</option>
-                <option value="accessories">{t('nav.accessories')}</option>
-              </select>
-              <ChevronDown size={14} className="category-arrow" />
-            </div>
-
+          <div className="mobile-nav-search">
             <input 
               type="text" 
               className="search-input"
@@ -113,187 +317,86 @@ export default function Navbar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-
-            <button className="search-submit-btn" aria-label="Search equipment">
-              <Search size={18} />
-            </button>
+            <button className="search-submit-btn"><Search size={16} /></button>
           </div>
-
-          {/* User actions */}
-          <div className="navbar-actions">
-            {/* Compare items badge */}
+          <div className="mobile-links-list">
             <button 
-              className={`action-btn compare-btn ${compareItems.length > 0 ? 'active' : ''}`}
-              onClick={onOpenCompare}
-              title={t('nav.compare')}
+              className="mobile-link-item"
+              onClick={() => {
+                setSelectedCategory('rackets');
+                onScrollToSection('specs-filter');
+                setMobileMenuOpen(false);
+              }}
             >
-              <div className="icon-wrapper">
-                <Scale size={20} />
-                {compareItems.length > 0 && (
-                  <span className="badge-count compare-count">{compareItems.length}</span>
-                )}
-              </div>
-              <div className="action-text">
-                <span className="action-sub">Specs</span>
-                <span className="action-main">{t('nav.compare')}</span>
-              </div>
+              {t('nav.rackets')}
+            </button>
+            <button 
+              className="mobile-link-item"
+              onClick={() => {
+                setSelectedCategory('shoes');
+                onScrollToSection('products');
+                setMobileMenuOpen(false);
+              }}
+            >
+              {t('nav.shoes')}
+            </button>
+            <button 
+              className="mobile-link-item"
+              onClick={() => {
+                setSelectedCategory('shuttles');
+                onScrollToSection('products');
+                setMobileMenuOpen(false);
+              }}
+            >
+              {t('nav.shuttles')}
+            </button>
+            <button 
+              className="mobile-link-item"
+              onClick={() => {
+                setSelectedCategory('bags');
+                onScrollToSection('products');
+                setMobileMenuOpen(false);
+              }}
+            >
+              {t('nav.bags')}
+            </button>
+            <button 
+              className="mobile-link-item highlight"
+              onClick={() => {
+                onScrollToSection('specs-filter');
+                setMobileMenuOpen(false);
+              }}
+            >
+              <Sparkles size={16} className="text-orange" />
+              <span>{t('nav.racketLab')}</span>
+            </button>
+            <button 
+              className="mobile-link-item"
+              onClick={() => {
+                onOpenTrackOrder();
+                setMobileMenuOpen(false);
+              }}
+            >
+              <Truck size={16} />
+              <span>{t('nav.trackOrder')}</span>
             </button>
 
-            {/* Wishlist */}
-            <button 
-              className="action-btn"
-              onClick={onOpenWishlist}
-              title={t('nav.wishlist')}
-            >
-              <div className="icon-wrapper">
-                <Heart size={20} />
-                {wishlistCount > 0 && (
-                  <span className="badge-count wishlist-count">{wishlistCount}</span>
-                )}
-              </div>
-              <div className="action-text">
-                <span className="action-sub">{t('nav.wishlist')}</span>
-                <span className="action-main">{wishlistCount > 0 ? `${wishlistCount}` : '0'}</span>
-              </div>
-            </button>
-
-            {/* Cart */}
-            <button 
-              className="action-btn cart-btn"
-              onClick={onOpenCart}
-              title={t('nav.cart')}
-            >
-              <div className="icon-wrapper">
-                <ShoppingCart size={22} />
-                <span className="badge-count cart-count">{cartCount}</span>
-              </div>
-              <div className="action-text">
-                <span className="action-sub">{t('nav.cart')}</span>
-                <span className="action-main cart-total-text">
-                  {cartCount > 0 ? `${cartCount} ${t('cart.items')}` : '$0.00'}
-                </span>
-              </div>
-            </button>
-
-            {/* Admin Portal Toggle */}
-            <button 
-              className="action-btn admin-portal-btn"
-              onClick={onOpenAdmin}
-              title={t('nav.adminPortal')}
-            >
-              <div className="icon-wrapper">
-                <ShieldCheck size={20} className="text-orange" />
-              </div>
-              <div className="action-text">
-                <span className="action-sub">Workshop</span>
-                <span className="action-main">Admin</span>
-              </div>
-            </button>
-
-            {/* Mobile menu toggle */}
-            <button 
-              className="mobile-hamburger-btn"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* ONLY SHOW ADMIN IN MOBILE IF USER IS ADMIN OR SUPERADMIN */}
+            {isAdmin && (
+              <button 
+                className="mobile-link-item text-orange font-bold"
+                onClick={() => {
+                  onOpenAdmin();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <ShieldCheck size={16} />
+                <span>{t('nav.adminPortal')}</span>
+              </button>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* Secondary category sub-bar */}
-      <nav className={`navbar-sub ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="container sub-content">
-          <button 
-            className="sub-link highlight-all"
-            onClick={() => {
-              setSelectedCategory('all');
-              onScrollToSection('categories');
-              setMobileMenuOpen(false);
-            }}
-          >
-            <Menu size={16} />
-            <span>{t('categories.title')}</span>
-          </button>
-
-          <button 
-            className="sub-link" 
-            onClick={() => {
-              onScrollToSection('deals');
-              setMobileMenuOpen(false);
-            }}
-          >
-            <span className="tag-fire"><Flame size={15} color="#ef4444" /></span> {t('nav.todaysDeals')}
-          </button>
-
-          <button 
-            className="sub-link"
-            onClick={() => {
-              setSelectedCategory('rackets');
-              onScrollToSection('specs-filter');
-              setMobileMenuOpen(false);
-            }}
-          >
-            {t('nav.rackets')}
-          </button>
-
-          <button 
-            className="sub-link"
-            onClick={() => {
-              setSelectedCategory('shoes');
-              onScrollToSection('products');
-              setMobileMenuOpen(false);
-            }}
-          >
-            {t('nav.shoes')}
-          </button>
-
-          <button 
-            className="sub-link"
-            onClick={() => {
-              setSelectedCategory('shuttles');
-              onScrollToSection('products');
-              setMobileMenuOpen(false);
-            }}
-          >
-            {t('nav.shuttles')}
-          </button>
-
-          <button 
-            className="sub-link"
-            onClick={() => {
-              setSelectedCategory('bags');
-              onScrollToSection('products');
-              setMobileMenuOpen(false);
-            }}
-          >
-            {t('nav.bags')}
-          </button>
-
-          <button 
-            className="sub-link highlight-compare"
-            onClick={() => {
-              onScrollToSection('specs-filter');
-              setMobileMenuOpen(false);
-            }}
-          >
-            <Scale size={15} />
-            <span>{t('nav.racketLab')}</span>
-          </button>
-
-          <button 
-            className="sub-link highlight-track"
-            onClick={() => {
-              onOpenTrackOrder();
-              setMobileMenuOpen(false);
-            }}
-          >
-            <Truck size={15} />
-            <span>{t('nav.trackOrder')}</span>
-          </button>
-        </div>
-      </nav>
+      )}
     </header>
   );
 }

@@ -2,19 +2,11 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   Search, 
-  Filter, 
-  Edit3, 
-  Trash2, 
-  SlidersHorizontal, 
-  ArrowUpDown, 
-  Check, 
-  X,
-  Package
+  Trash2
 } from 'lucide-react';
 
 export default function ProductsManagerTab({ 
   products, 
-  onAddProduct, 
   onDeleteProduct, 
   onUpdateStock,
   onOpenAddModal 

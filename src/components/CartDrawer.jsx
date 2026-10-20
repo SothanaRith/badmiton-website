@@ -9,8 +9,9 @@ export default function CartDrawer({
   cart, 
   onUpdateQuantity, 
   onRemoveItem, 
-  onClearCart,
-  onProceedCheckout 
+  _onClearCart,
+  onProceedCheckout,
+  products = []
 }) {
   const { t, lang } = useLanguage();
 
@@ -105,16 +106,27 @@ export default function CartDrawer({
                         <button 
                           className="stepper-btn"
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                          title="Decrease quantity"
                         >
                           <Minus size={13} />
                         </button>
                         <span className="stepper-val">{item.quantity}</span>
-                        <button 
-                          className="stepper-btn"
-                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus size={13} />
-                        </button>
+                        {(() => {
+                          const p = products.find(prod => prod.id === item.id);
+                          const maxStock = p ? (p.stockCount ?? 99) : 99;
+                          const isMaxReached = item.quantity >= maxStock;
+
+                          return (
+                            <button 
+                              className={`stepper-btn ${isMaxReached ? 'disabled' : ''}`}
+                              onClick={() => !isMaxReached && onUpdateQuantity(item.id, item.quantity + 1)}
+                              disabled={isMaxReached}
+                              title={isMaxReached ? (lang === 'km' ? `ស្តុកអតិបរមា ${maxStock}` : `Max stock reached (${maxStock})`) : "Increase quantity"}
+                            >
+                              <Plus size={13} />
+                            </button>
+                          );
+                        })()}
                       </div>
 
                       <div className="cart-item-price">

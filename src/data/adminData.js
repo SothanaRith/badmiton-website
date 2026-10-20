@@ -146,3 +146,36 @@ export const MONTHLY_SALES_DATA = [
   { month: 'Sep', revenue: 44500, rackets: 128, stringingJobs: 245 },
   { month: 'Oct', revenue: 48920, rackets: 146, stringingJobs: 288 }
 ];
+
+export const INITIAL_REFUNDS = [
+  {
+    id: 'REF-8841',
+    orderId: 'ORD-9942',
+    customerName: 'Marcus Tan',
+    phone: '+65 9123 4567',
+    item: 'Yonex Astrox 100 ZZ Kurenai',
+    amount: 249.00,
+    reasonCategory: 'transit_damage',
+    reasonText: 'Outer box crushed during courier delivery, causing racket frame scratch.',
+    method: 'khqr',
+    khqrReceiver: 'marcus.tan@aba',
+    status: 'pending', // 'pending', 'approved', 'rejected'
+    createdAt: '2026-10-19 16:30',
+    notes: 'Customer submitted clear unboxing photo. Ready for Bakong reversal.'
+  },
+  {
+    id: 'REF-8840',
+    orderId: 'ORD-9940',
+    customerName: 'Sophea Keo',
+    phone: '+855 12 777 888',
+    item: 'Yonex Power Cushion 65 Z3 Men (White/Orange, Size 42)',
+    amount: 140.00,
+    reasonCategory: 'wrong_size',
+    reasonText: 'Size 42 too tight, requesting size 43 exchange or refund.',
+    method: 'khqr',
+    khqrReceiver: 'sophea.keo@acleda',
+    status: 'approved',
+    createdAt: '2026-10-18 11:20',
+    notes: 'Approved for court pickup exchange at Olympic Stadium Court.'
+  }
+];

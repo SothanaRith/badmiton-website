@@ -16,13 +16,13 @@ import { useLanguage } from '../context/LanguageContext';
 export default function TrackOrderModal({ isOpen, onClose, orders }) {
   const { t, lang } = useLanguage();
 
-  if (!isOpen) return null;
-
   const [searchQuery, setSearchQuery] = useState('ORD-9942');
   const [searchedOrder, setSearchedOrder] = useState(
     orders.find(o => o.id === 'ORD-9942') || orders[0] || null
   );
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (!isOpen) return null;
 
   const handleSearch = (e) => {
     e.preventDefault();

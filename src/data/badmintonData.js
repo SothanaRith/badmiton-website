@@ -54,6 +54,7 @@ export const PRODUCTS = [
     image: '/images/hero-racket.jpg',
     badge: 'BEST SELLER',
     inStock: true,
+    stockCount: 12,
     description: 'Flagship offensive racket engineered with Hyper Slim Shaft and Namd graphite for explosive continuous smash power and sharp angle attacks.',
     specs: {
       balance: 'Head-Heavy',
@@ -79,6 +80,7 @@ export const PRODUCTS = [
     image: '/images/hero-racket.jpg',
     badge: 'HOT DEAL',
     inStock: true,
+    stockCount: 15,
     description: 'Equipped with WES 2.0 and FREE CORE synthetic handle for quick recovery and fierce decisive attacks at the highest competitive level.',
     specs: {
       balance: 'Head-Heavy',
@@ -104,6 +106,7 @@ export const PRODUCTS = [
     image: '/images/hero-racket.jpg',
     badge: 'PRO CHOICE',
     inStock: true,
+    stockCount: 14,
     description: 'The pinnacle of even-balance control and swift defensive counters. High-elastic carbon shaft provides surgical shuttle placement.',
     specs: {
       balance: 'Even-Balance',
@@ -129,6 +132,7 @@ export const PRODUCTS = [
     image: '/images/hero-racket.jpg',
     badge: 'WORLD RECORD SPEED',
     inStock: true,
+    stockCount: 8,
     description: 'The fastest racket frame ever produced. Engineered for lightning drives, net kills, and instantaneous swing speed.',
     specs: {
       balance: 'Head-Light',
@@ -154,6 +158,7 @@ export const PRODUCTS = [
     image: '/images/hero-racket.jpg',
     badge: 'NEW ARRIVAL',
     inStock: true,
+    stockCount: 11,
     description: 'Innovative metallic carbon fiber integration in the shaft provides crisp feedback and effortless baseline-to-baseline clears.',
     specs: {
       balance: 'Even-Balance',
@@ -179,6 +184,7 @@ export const PRODUCTS = [
     image: '/images/court-shoes.jpg',
     badge: 'FEATHER LIGHT',
     inStock: true,
+    stockCount: 16,
     description: 'The lightest badminton shoe on the market at just 240g. Seamless upper construction with Power Cushion+ shock absorption.',
     specs: {
       weight: '240g',
@@ -199,6 +205,7 @@ export const PRODUCTS = [
     image: '/images/court-shoes.jpg',
     badge: 'MAX STABILITY',
     inStock: true,
+    stockCount: 10,
     description: 'Tournament-grade lateral stability shoe with ENERGYMAX V heel dampening, preventing ankle rolling during extreme lunges.',
     specs: {
       weight: '310g',
@@ -219,6 +226,7 @@ export const PRODUCTS = [
     image: '/images/shuttlecocks.jpg',
     badge: 'BWF OFFICIAL',
     inStock: true,
+    stockCount: 6,
     description: 'Official tournament shuttlecock for Olympic Games and World Championships. Crafted with 100% selected goose feathers and 100% solid cork.',
     specs: {
       feather: 'Grade A Goose Feather',
@@ -239,6 +247,7 @@ export const PRODUCTS = [
     image: '/images/shuttlecocks.jpg',
     badge: 'TOP FLIGHT',
     inStock: true,
+    stockCount: 18,
     description: 'Superior flight trajectory consistency and incredible durability under heavy smash testing.',
     specs: {
       feather: 'Selected Goose Feathers',
@@ -259,6 +268,7 @@ export const PRODUCTS = [
     image: '/images/tour-bag.jpg',
     badge: 'THERMO GUARD',
     inStock: true,
+    stockCount: 7,
     description: 'Dual climate-protection compartments protect your string tension from hot courts and temperature swings. Dedicated ventilated shoe tunnel.',
     specs: {
       capacity: 'Up to 9 Rackets',
@@ -278,6 +288,7 @@ export const PRODUCTS = [
     image: '/images/string-reel.jpg',
     badge: 'CRISP SOUND',
     inStock: true,
+    stockCount: 2,
     description: '0.65mm thin gauge string that produces deafening metallic hitting sound and blistering shuttle repulsion on smashes.',
     specs: {
       gauge: '0.65mm',
@@ -297,6 +308,7 @@ export const PRODUCTS = [
     image: '/images/overgrips.jpg',
     badge: 'BEST VALUE',
     inStock: true,
+    stockCount: 9,
     description: 'Micro-perforated polyurethane material that absorbs sweat immediately and provides slip-free control even during intense rallies.',
     specs: {
       thickness: '0.60mm',

@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { X, Star, ShoppingCart, ShieldCheck, Scale, Wrench } from 'lucide-react';
+import { X, Star, ShoppingCart, ShieldCheck, Wrench } from 'lucide-react';
 import { PRODUCTS, STRING_OPTIONS } from '../data/badmintonData';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function QuickViewModal({ productId, onClose, onAddToCart }) {
+export default function QuickViewModal({ productId, products = PRODUCTS, onClose, onAddToCart }) {
   const { t, lang } = useLanguage();
-
-  if (!productId) return null;
-
-  const product = PRODUCTS.find(p => p.id === productId);
-  if (!product) return null;
-
   const [selectedString, setSelectedString] = useState(STRING_OPTIONS[0].name);
   const [tension, setTension] = useState(26);
 
+  if (!productId) return null;
+
+  const product = products.find(p => p.id === productId);
+  if (!product) return null;
+
+  const isOutOfStock = (product.stockCount !== undefined && product.stockCount <= 0) || product.inStock === false;
+
   const handleAddWithSpecs = () => {
+    if (isOutOfStock) return;
     onAddToCart(product.id, {
       selectedString: product.category === 'rackets' ? selectedString : null,
       stringTension: product.category === 'rackets' ? tension : null
@@ -24,7 +26,7 @@ export default function QuickViewModal({ productId, onClose, onAddToCart }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container quickview-modal animate-slide-up" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-container quickview-modal modern-quickview animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
           <X size={20} />
         </button>
@@ -40,9 +42,25 @@ export default function QuickViewModal({ productId, onClose, onAddToCart }) {
             </div>
           </div>
 
-          {/* Right Column: Specs & Customization */}
+          {/* Right Column: Buying Options */}
           <div className="quickview-info-col">
-            <span className="quickview-brand">{product.brand}</span>
+            <div className="quickview-header-strip">
+              <span className="quickview-brand">{product.brand}</span>
+              {isOutOfStock ? (
+                <span className="stock-tag out-of-stock">
+                  {lang === 'km' ? 'ដាច់ស្តុក' : 'Out of Stock'}
+                </span>
+              ) : product.stockCount <= 5 ? (
+                <span className="stock-tag low-stock">
+                  {lang === 'km' ? `នៅសល់តែ ${product.stockCount} គ្រឿងទៀត` : `Low Stock (Only ${product.stockCount} left!)`}
+                </span>
+              ) : (
+                <span className="stock-tag in-stock">
+                  {lang === 'km' ? `មានក្នុងស្តុក (${product.stockCount})` : `In Stock (${product.stockCount})`}
+                </span>
+              )}
+            </div>
+
             <h2 className="quickview-title">{product.name}</h2>
 
             <div className="quickview-rating-row">
@@ -50,14 +68,14 @@ export default function QuickViewModal({ productId, onClose, onAddToCart }) {
                 {[...Array(5)].map((_, i) => (
                   <Star 
                     key={i} 
-                    size={15} 
+                    size={14} 
                     fill={i < Math.floor(product.rating) ? '#ff9900' : 'none'} 
                     color="#ff9900" 
                   />
                 ))}
               </div>
               <span className="rating-score">{product.rating}</span>
-              <span className="rating-count">({product.reviewsCount} {lang === 'km' ? 'ការវាយតម្លៃពីអ្នកលេង' : 'verified player reviews'})</span>
+              <span className="rating-count">({product.reviewsCount} {lang === 'km' ? 'មតិវាយតម្លៃ' : 'reviews'})</span>
             </div>
 
             <div className="quickview-pricing">
@@ -65,17 +83,16 @@ export default function QuickViewModal({ productId, onClose, onAddToCart }) {
               {product.originalPrice && (
                 <span className="old-price">${product.originalPrice.toFixed(2)}</span>
               )}
-              <span className="stock-tag in-stock">{lang === 'km' ? 'មានក្នុងស្តុក • រួចរាល់សម្រាប់ដាក់ខ្សែ' : 'In Stock • Ready to String'}</span>
             </div>
 
             <p className="quickview-desc">{product.description}</p>
 
             {/* Racket Custom Restringing Options */}
             {product.category === 'rackets' && (
-              <div className="stringing-customizer-box">
+              <div className="stringing-customizer-box modern-customizer">
                 <div className="customizer-title">
-                  <Wrench size={16} className="text-orange" />
-                  <span>{lang === 'km' ? 'ការកំណត់កម្លាំងទាញខ្សែរ៉ាកែត' : 'Custom Stringing Specification'}</span>
+                  <Wrench size={15} className="text-orange" />
+                  <span>{lang === 'km' ? 'ជ្រើសរើសខ្សែ & កម្លាំងទាញ' : 'String & Tension Setup'}</span>
                 </div>
 
                 <div className="customizer-field">
@@ -107,47 +124,33 @@ export default function QuickViewModal({ productId, onClose, onAddToCart }) {
                     className="tension-slider"
                   />
                   <div className="tension-ticks">
-                    <span>22 lbs ({lang === 'km' ? 'ទន់គ្រប់គ្រង' : 'Control'})</span>
-                    <span>26 lbs ({lang === 'km' ? 'ស្តង់ដារក្លឹប' : 'Club Pro'})</span>
-                    <span>30 lbs ({lang === 'km' ? 'កម្រិតប្រកួត' : 'Tournament'})</span>
+                    <span>22 lbs ({lang === 'km' ? 'ទន់' : 'Control'})</span>
+                    <span>26 lbs ({lang === 'km' ? 'ស្តង់ដារ' : 'Club'})</span>
+                    <span>30 lbs ({lang === 'km' ? 'ប្រកួត' : 'Pro'})</span>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Specs Breakdown */}
-            {product.specs && product.category === 'rackets' && (
-              <div className="quickview-specs-table">
-                <div className="spec-item">
-                  <span className="spec-k">{t('quickview.balance')}:</span>
-                  <span className="spec-v">{product.specs.balance}</span>
-                </div>
-                <div className="spec-item">
-                  <span className="spec-k">{t('quickview.flex')}:</span>
-                  <span className="spec-v">{product.specs.flex}</span>
-                </div>
-                <div className="spec-item">
-                  <span className="spec-k">{t('quickview.weight')}:</span>
-                  <span className="spec-v">{product.specs.weightGrip}</span>
-                </div>
-                <div className="spec-item">
-                  <span className="spec-k">{t('quickview.maxTension')}:</span>
-                  <span className="spec-v">{product.specs.tensionMax}</span>
                 </div>
               </div>
             )}
 
             {/* Add to cart action */}
             <div className="quickview-cta-box">
-              <button className="btn btn-primary btn-lg" onClick={handleAddWithSpecs}>
+              <button 
+                className={`btn btn-primary btn-lg btn-full-width ${isOutOfStock ? 'btn-disabled' : ''}`}
+                onClick={handleAddWithSpecs}
+                disabled={isOutOfStock}
+              >
                 <ShoppingCart size={18} />
-                <span>{t('product.addToCart')} - ${(product.price).toFixed(2)}</span>
+                <span>
+                  {isOutOfStock 
+                    ? (lang === 'km' ? 'ដាច់ស្តុកបណ្តោះអាសន្ន' : 'Temporarily Out of Stock') 
+                    : `${t('product.addToCart')} - $${product.price.toFixed(2)}`}
+                </span>
               </button>
             </div>
 
             <div className="quickview-trust-row">
               <ShieldCheck size={14} className="text-green" />
-              <span>{lang === 'km' ? 'ធានាដូរវិញក្នុង ៣០ ថ្ងៃ • ក្រិតកម្លាំងខ្សែម៉ាស៊ីនអេឡិចត្រូនិចត្រឹមត្រូវ' : 'Free returns within 30 days • Certified electronic string tension guaranteed'}</span>
+              <span>{lang === 'km' ? 'ទំនិញសុទ្ធ ១០០% • ដោតខ្សែដោយម៉ាស៊ីនអេឡិចត្រូនិចត្រឹមត្រូវ' : '100% Authentic • Precision Electronic Restringing'}</span>
             </div>
           </div>
         </div>

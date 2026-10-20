@@ -1,10 +1,12 @@
 import React from 'react';
-import { ShieldCheck, Award, Wrench, Globe, Truck } from 'lucide-react';
+import { ShieldCheck, Award, Wrench, Globe, Truck, RotateCcw } from 'lucide-react';
 import { BadmintonIcon } from './BadmintonIcon';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
-export default function Footer({ onScrollToTop, onOpenTrackOrder }) {
+export default function Footer({ onScrollToTop, onOpenTrackOrder, onOpenAdmin, onOpenLegal }) {
   const { t, lang } = useLanguage();
+  const { isAdmin } = useAuth();
 
   return (
     <footer className="site-footer">
@@ -95,10 +97,29 @@ export default function Footer({ onScrollToTop, onOpenTrackOrder }) {
                   <span>{t('nav.trackOrder')}</span>
                 </button>
               </li>
+              <li>
+                <button 
+                  className="footer-text-btn"
+                  onClick={() => onOpenLegal && onOpenLegal('refunds')}
+                >
+                  <RotateCcw size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                  <span>{lang === 'km' ? 'គោលការណ៍ប្តូរទំនិញ & សងប្រាក់វិញ' : '30-Day Returns & Refunds'}</span>
+                </button>
+              </li>
               <li><a href="#shipping">{lang === 'km' ? 'តម្លៃដឹកជញ្ជូន (VET, J&T, Jalat)' : 'Cambodia Courier Rates (VET, J&T, Jalat)'}</a></li>
-              <li><a href="#returns">{lang === 'km' ? 'គោលការណ៍ប្តូរទំនិញក្នុង ៣០ ថ្ងៃ' : '30-Day Hassle-Free Returns'}</a></li>
               <li><a href="#warranty">{lang === 'km' ? 'ការធានាតួរ៉ាកែត' : 'Racket Frame Warranty'}</a></li>
-              <li><a href="#help">{lang === 'km' ? 'ផ្នែកគាំទ្របច្ចេកទេស ២៤/៧' : '24/7 Stringer Support Desk'}</a></li>
+              {/* Only show Admin portal if logged in as Admin or SuperAdmin */}
+              {isAdmin && (
+                <li>
+                  <button 
+                    className="footer-text-btn footer-admin-access-btn"
+                    onClick={onOpenAdmin}
+                  >
+                    <Wrench size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                    <span>{t('nav.adminPortal')}</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -116,11 +137,34 @@ export default function Footer({ onScrollToTop, onOpenTrackOrder }) {
           </div>
 
           <div className="footer-legal-links">
-            <a href="#conditions">{lang === 'km' ? 'លក្ខខណ្ឌប្រើប្រាស់' : 'Conditions of Use'}</a>
+            <button 
+              className="footer-legal-btn" 
+              onClick={() => onOpenLegal && onOpenLegal('conditions')}
+            >
+              {lang === 'km' ? 'លក្ខខណ្ឌប្រើប្រាស់' : 'Conditions of Use'}
+            </button>
             <span className="dot">•</span>
-            <a href="#privacy">{lang === 'km' ? 'គោលការណ៍ភាពឯកជន' : 'Privacy Notice'}</a>
+            <button 
+              className="footer-legal-btn" 
+              onClick={() => onOpenLegal && onOpenLegal('privacy')}
+            >
+              {lang === 'km' ? 'គោលការណ៍ភាពឯកជន' : 'Privacy Notice'}
+            </button>
             <span className="dot">•</span>
-            <a href="#hologram">{lang === 'km' ? 'ការផ្ទៀងផ្ទាត់តែម Hologram' : 'Hologram Anti-Counterfeit Verification'}</a>
+            <button 
+              className="footer-legal-btn" 
+              onClick={() => onOpenLegal && onOpenLegal('refunds')}
+            >
+              {lang === 'km' ? 'ការសងប្រាក់' : 'Refunds'}
+            </button>
+            {isAdmin && (
+              <>
+                <span className="dot">•</span>
+                <button className="footer-legal-admin-btn" onClick={onOpenAdmin}>
+                  {lang === 'km' ? 'គ្រប់គ្រងហាង Admin' : 'Admin Portal'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

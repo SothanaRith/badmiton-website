@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { PRODUCTS } from './data/badmintonData';
-import { INITIAL_ORDERS, INITIAL_STRINGING_JOBS, LOW_STOCK_ITEMS } from './data/adminData';
+import { INITIAL_ORDERS, INITIAL_STRINGING_JOBS, LOW_STOCK_ITEMS, INITIAL_REFUNDS } from './data/adminData';
 import { DEFAULT_DELIVERY_PROVIDERS, DEFAULT_FREE_DELIVERY_THRESHOLD } from './data/deliveryData';
 import Navbar from './components/Navbar';
 import HeroBanner from './components/HeroBanner';
@@ -9,8 +9,6 @@ import ShopByCategory from './components/ShopByCategory';
 import SpecsComparisonSection from './components/SpecsComparisonSection';
 import ProductCarouselSection from './components/ProductCarouselSection';
 import MiddlePromoBanner from './components/MiddlePromoBanner';
-import LifestyleBanners from './components/LifestyleBanners';
-import NewsletterBanner from './components/NewsletterBanner';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import WishlistDrawer from './components/WishlistDrawer';
@@ -20,13 +18,25 @@ import MobileBottomNav from './components/MobileBottomNav';
 import AdminDashboard from './components/admin/AdminDashboard';
 import CheckoutModal from './components/checkout/CheckoutModal';
 import TrackOrderModal from './components/TrackOrderModal';
-import { ShieldCheck, Wrench, Truck } from 'lucide-react';
+import AuthModal from './components/auth/AuthModal';
+import LegalModal from './components/legal/LegalModal';
+import ProductCard from './components/ProductCard';
+import { Wrench } from 'lucide-react';
 import { useLanguage } from './context/LanguageContext';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
   const { t, lang } = useLanguage();
+  const { currentUser, isAdmin, isSuperAdmin } = useAuth();
+
   // Mode toggle: Storefront vs Admin Dashboard
   const [isAdminMode, setIsAdminMode] = useState(false);
+
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
+  const [authNotice, setAuthNotice] = useState(null);
+  const [pendingCheckout, setPendingCheckout] = useState(false);
 
   // Dynamic Catalog State
   const [productsList, setProductsList] = useState(PRODUCTS);
@@ -35,6 +45,7 @@ export default function App() {
   const [ordersList, setOrdersList] = useState(INITIAL_ORDERS);
   const [stringingJobsList, setStringingJobsList] = useState(INITIAL_STRINGING_JOBS);
   const [lowStockList, setLowStockList] = useState(LOW_STOCK_ITEMS);
+  const [refundsList, setRefundsList] = useState(INITIAL_REFUNDS);
 
   // Cambodia Delivery Providers & KHQR Gateway Settings
   const [deliveryProviders, setDeliveryProviders] = useState(DEFAULT_DELIVERY_PROVIDERS);
@@ -78,6 +89,8 @@ export default function App() {
   const [quickViewProductId, setQuickViewProductId] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isTrackOrderOpen, setIsTrackOrderOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState('conditions');
 
   // Admin Operations
   const handleAddProduct = (newProduct) => {
@@ -89,11 +102,47 @@ export default function App() {
   };
 
   const handleUpdateStock = (productId, newStock) => {
-    setProductsList(prev => prev.map(p => p.id === productId ? { ...p, stockCount: newStock } : p));
+    setProductsList(prev => prev.map(p => 
+      p.id === productId 
+        ? { ...p, stockCount: Math.max(0, newStock), inStock: newStock > 0 } 
+        : p
+    ));
+    setLowStockList(prev => prev.map(item => 
+      item.id === productId 
+        ? { ...item, currentStock: Math.max(0, newStock) } 
+        : item
+    ));
   };
 
   const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrdersList(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    setOrdersList(prevOrders => {
+      const existingOrder = prevOrders.find(o => o.id === orderId);
+      if (existingOrder && existingOrder.status !== newStatus) {
+        const wasActive = existingOrder.status !== 'Cancelled' && existingOrder.status !== 'Refunded';
+        const isNowInactive = newStatus === 'Cancelled' || newStatus === 'Refunded';
+
+        // When order is cancelled or refunded, restore stock back into catalog and alert list
+        if (wasActive && isNowInactive) {
+          setProductsList(prevProducts => 
+            prevProducts.map(p => {
+              const matchedItem = existingOrder.items.find(it => it.id === p.id || it.name === p.name);
+              if (matchedItem) {
+                const restored = (p.stockCount ?? 0) + matchedItem.qty;
+                return { ...p, stockCount: restored, inStock: true };
+              }
+              return p;
+            })
+          );
+          setLowStockList(prevLow => 
+            prevLow.map(item => {
+              const matchedItem = existingOrder.items.find(it => it.id === item.id || it.name === item.name);
+              return matchedItem ? { ...item, currentStock: item.currentStock + matchedItem.qty } : item;
+            })
+          );
+        }
+      }
+      return prevOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+    });
   };
 
   const handleUpdateJobStatus = (jobId, newStatus) => {
@@ -110,6 +159,11 @@ export default function App() {
         ? { ...item, currentStock: item.currentStock + amount } 
         : item
     ));
+    setProductsList(prev => prev.map(p => 
+      p.id === itemId 
+        ? { ...p, stockCount: (p.stockCount ?? 0) + amount, inStock: true } 
+        : p
+    ));
   };
 
   // Delivery settings updates
@@ -117,11 +171,70 @@ export default function App() {
     setDeliveryProviders(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
-  // Checkout order placement handler
+  // Returns & Refunds Operations
+  const handleCreateRefund = (newTicket) => {
+    setRefundsList(prev => [newTicket, ...prev]);
+  };
+
+  const handleUpdateRefundStatus = (refundId, newStatus) => {
+    setRefundsList(prev => prev.map(r => r.id === refundId ? { ...r, status: newStatus } : r));
+  };
+
+  const handleOpenLegal = (tab = 'conditions') => {
+    setLegalModalTab(tab);
+    setIsLegalModalOpen(true);
+  };
+
+  // Checkout order placement handler: deducts stock, triggers low stock alerts, and sets up restringing
   const handleOrderCompleted = (newOrder) => {
     setOrdersList(prev => [newOrder, ...prev]);
     
-    // Check if any racket in the order has custom stringing, and create job ticket in queue
+    // 1. Deduct stock from productsList and update inStock flag
+    setProductsList(prevProducts => 
+      prevProducts.map(p => {
+        const orderedItem = newOrder.items.find(it => it.id === p.id || it.name === p.name);
+        if (orderedItem) {
+          const remainingStock = Math.max(0, (p.stockCount ?? 15) - orderedItem.qty);
+          return {
+            ...p,
+            stockCount: remainingStock,
+            inStock: remainingStock > 0
+          };
+        }
+        return p;
+      })
+    );
+
+    // 2. Sync / trigger low-stock alerts
+    setLowStockList(prevLow => {
+      let updated = [...prevLow];
+      newOrder.items.forEach(it => {
+        const prod = productsList.find(p => p.id === it.id || p.name === it.name);
+        if (prod) {
+          const remaining = Math.max(0, (prod.stockCount ?? 15) - it.qty);
+          const existingIdx = updated.findIndex(alert => alert.id === prod.id);
+          if (existingIdx > -1) {
+            updated[existingIdx] = {
+              ...updated[existingIdx],
+              currentStock: remaining
+            };
+          } else if (remaining <= 5) {
+            updated.push({
+              id: prod.id,
+              name: prod.name,
+              category: prod.category.toUpperCase(),
+              currentStock: remaining,
+              reorderLevel: 10,
+              unit: prod.category === 'shuttles' ? 'Tubes' : (prod.category === 'accessories' ? 'Spools' : 'Units'),
+              burnRate: 'High'
+            });
+          }
+        }
+      });
+      return updated;
+    });
+
+    // 3. Check if any racket in the order has custom stringing, and create job ticket in queue
     newOrder.items.forEach(item => {
       if (item.selectedString && item.stringTension) {
         const stringingTicket = {
@@ -144,10 +257,18 @@ export default function App() {
     setCart([]);
   };
 
-  // Cart operations
+  // Cart operations with stock validation
   const handleAddToCart = (productId, customOptions = {}) => {
     const product = productsList.find(p => p.id === productId);
     if (!product) return;
+
+    const availableStock = product.stockCount ?? 15;
+    if (availableStock <= 0 || !product.inStock) {
+      alert(lang === 'km' 
+        ? 'សូមអភ័យទោស ទំនិញនេះដាច់ស្តុកហើយ!' 
+        : 'Sorry, this equipment is currently out of stock!');
+      return;
+    }
 
     setCart(prev => {
       const existingIndex = prev.findIndex(item => 
@@ -157,6 +278,12 @@ export default function App() {
       );
 
       if (existingIndex > -1) {
+        if (prev[existingIndex].quantity >= availableStock) {
+          alert(lang === 'km' 
+            ? `អ្នកបានជ្រើសរើសចំនួនអតិបរមានៃស្តុកដែលមានហើយ (${availableStock} គ្រឿង)!` 
+            : `You have reached the maximum available stock (${availableStock} units)!`);
+          return prev;
+        }
         const nextCart = [...prev];
         nextCart[existingIndex].quantity += 1;
         return nextCart;
@@ -180,6 +307,17 @@ export default function App() {
   const handleUpdateQuantity = (id, newQty) => {
     if (newQty <= 0) {
       handleRemoveItem(id);
+      return;
+    }
+
+    const product = productsList.find(p => p.id === id);
+    const availableStock = product ? (product.stockCount ?? 99) : 99;
+
+    if (newQty > availableStock) {
+      alert(lang === 'km' 
+        ? `ចំនួនស្តុកមានកំណត់ត្រឹមតែ ${availableStock} គ្រឿងប៉ុណ្ណោះ!` 
+        : `Only ${availableStock} units available in stock!`);
+      setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: availableStock } : item));
     } else {
       setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
     }
@@ -234,6 +372,27 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Open checkout gate: require login or register
+  const handleProceedToCheckout = () => {
+    setIsCartOpen(false);
+    if (!currentUser) {
+      setAuthNotice(t('auth.loginRequiredForCheckout'));
+      setPendingCheckout(true);
+      setAuthModalMode('login');
+      setIsAuthModalOpen(true);
+    } else {
+      setIsCheckoutOpen(true);
+    }
+  };
+
+  const handleAuthSuccess = (_user) => {
+    if (pendingCheckout) {
+      setPendingCheckout(false);
+      setAuthNotice(null);
+      setIsCheckoutOpen(true);
+    }
+  };
+
   // Filtered products for search or category selection
   const searchedProducts = productsList.filter(p => {
     const matchesSearch = searchQuery === '' || 
@@ -246,7 +405,6 @@ export default function App() {
     return matchesSearch && matchesCat;
   });
 
-  const dealsProducts = productsList.filter(p => p.originalPrice && p.originalPrice > p.price);
   const bestSellers = productsList.filter(p => p.rating >= 4.8);
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -274,6 +432,8 @@ export default function App() {
         onUpdateFreeDeliveryThreshold={setFreeDeliveryThreshold}
         khqrMerchantName={khqrMerchantName}
         onUpdateKhqrMerchantName={setKhqrMerchantName}
+        refunds={refundsList}
+        onUpdateRefundStatus={handleUpdateRefundStatus}
       />
     );
   }
@@ -291,8 +451,15 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenCompare={() => setIsCompareModalOpen(true)}
-        onOpenAdmin={() => setIsAdminMode(true)}
+        onOpenAdmin={() => {
+          if (isAdmin) setIsAdminMode(true);
+        }}
         onOpenTrackOrder={() => setIsTrackOrderOpen(true)}
+        onOpenAuth={(mode = 'login') => {
+          setAuthModalMode(mode);
+          setAuthNotice(null);
+          setIsAuthModalOpen(true);
+        }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedCategory={selectedCategory}
@@ -352,27 +519,7 @@ export default function App() {
               onQuickView={setQuickViewProductId}
             />
 
-            {/* 5. Today's Deals Carousel */}
-            <ProductCarouselSection
-              id="deals"
-              title={lang === 'km' ? 'ប្រូម៉ូសិនពិសេសប្រចាំថ្ងៃ' : "Today's Tournament Deals & Steals"}
-              subtitle={lang === 'km' ? 'សម្ភារៈប្រកួតស្តុកមានកំណត់ បញ្ចុះតម្លៃរហូតដល់ ២៥% និងសេវាដាក់ខ្សែ' : 'Limited stock pro gear up to 25% off with instant stringing discounts'}
-              badge={lang === 'km' ? 'ប្រូម៉ូសិនក្តៅៗ' : 'FLASH DEALS'}
-              products={dealsProducts}
-              onAddToCart={handleAddToCart}
-              onQuickView={setQuickViewProductId}
-              onToggleWishlist={handleToggleWishlist}
-              wishlist={wishlist}
-              compareItems={compareItems}
-              onToggleCompare={handleToggleCompare}
-            />
-
-            {/* 6. Middle Promotional Banner (Amazon / Cambodia Court Delivery) */}
-            <MiddlePromoBanner
-              onScrollToDeals={() => scrollToSection('deals')}
-            />
-
-            {/* 7. Best Sellers Carousel */}
+            {/* 5. Best Sellers / Pro Gear Showcase */}
             <ProductCarouselSection
               id="products"
               title={lang === 'km' ? 'សម្ភារៈពេញនិយមបំផុតក្នុងចំណោមកីឡាករប្រកួត' : 'Most Popular Equipment Among Tournament Players'}
@@ -386,37 +533,37 @@ export default function App() {
               onToggleCompare={handleToggleCompare}
             />
 
-            {/* 8. Lifestyle Dual Banners */}
-            <LifestyleBanners
-              onSelectCategory={(catId) => {
-                setSelectedCategory(catId);
-                scrollToSection('specs-filter');
-              }}
+            {/* 6. Cambodia Court Delivery & KHQR Showcase */}
+            <MiddlePromoBanner
+              onScrollToDeals={() => scrollToSection('products')}
             />
-
-            {/* 9. Newsletter Subscription */}
-            <NewsletterBanner />
           </>
         )}
       </main>
 
-      {/* Floating Quick Admin Toggle for easy access */}
-      <button 
-        className="floating-admin-btn"
-        onClick={() => setIsAdminMode(true)}
-        title={t('nav.adminPortal')}
-      >
-        <Wrench size={16} />
-        <span>{t('nav.adminPortal')}</span>
-      </button>
+      {/* Floating Quick Admin Toggle: STRICTLY VISIBLE ONLY FOR ADMIN OR SUPERADMIN */}
+      {isAdmin && (
+        <button 
+          className="floating-admin-btn"
+          onClick={() => setIsAdminMode(true)}
+          title={t('nav.adminPortal')}
+        >
+          <Wrench size={16} />
+          <span>{isSuperAdmin ? 'SUPER ADMIN' : t('nav.adminPortal')}</span>
+        </button>
+      )}
 
-      {/* 10. Comprehensive Footer */}
+      {/* 7. Streamlined Footer */}
       <Footer 
         onScrollToTop={scrollToTop} 
         onOpenTrackOrder={() => setIsTrackOrderOpen(true)}
+        onOpenAdmin={() => {
+          if (isAdmin) setIsAdminMode(true);
+        }}
+        onOpenLegal={handleOpenLegal}
       />
 
-      {/* 11. Side-by-Side Racket Comparison Modal */}
+      {/* 8. Side-by-Side Racket Comparison Modal */}
       <ComparisonModal
         isOpen={isCompareModalOpen}
         onClose={() => setIsCompareModalOpen(false)}
@@ -425,22 +572,24 @@ export default function App() {
         onAddToCart={handleAddToCart}
       />
 
-      {/* 12. Quick View Modal with Custom Stringing Tension */}
+      {/* 9. Quick View Modal with Custom Stringing Tension */}
       <QuickViewModal
         productId={quickViewProductId}
+        products={productsList}
         onClose={() => setQuickViewProductId(null)}
         onAddToCart={handleAddToCart}
       />
 
-      {/* 13. Shopping Cart Slide-out Drawer */}
+      {/* 10. Shopping Cart Slide-out Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cart={cart}
+        products={productsList}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
-        onProceedCheckout={() => setIsCheckoutOpen(true)}
+        onProceedCheckout={handleProceedToCheckout}
       />
 
       {/* 14. Wishlist Slide-out Drawer */}
@@ -473,10 +622,32 @@ export default function App() {
         freeDeliveryThreshold={freeDeliveryThreshold}
       />
 
-      {/* 17. Track Order Modal */}
+      {/* 13. Track Order Modal */}
       <TrackOrderModal
         isOpen={isTrackOrderOpen}
         onClose={() => setIsTrackOrderOpen(false)}
+        orders={ordersList}
+      />
+
+      {/* 14. Authentication Modal (Login / Register) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingCheckout(false);
+          setAuthNotice(null);
+        }}
+        onSuccess={handleAuthSuccess}
+        initialMode={authModalMode}
+        notice={authNotice}
+      />
+
+      {/* 15. Legal Policies & Refund Request Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalModalTab}
+        onSubmitRefund={handleCreateRefund}
         orders={ordersList}
       />
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Check, Store } from 'lucide-react';
+import { Store } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function DeliveryMethod({ 

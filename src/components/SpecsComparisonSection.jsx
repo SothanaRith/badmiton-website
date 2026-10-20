@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Scale, Zap, Check, Eye, ShoppingCart, SlidersHorizontal, RefreshCw } from 'lucide-react';
+import { Scale, Eye, ShoppingCart, SlidersHorizontal, RefreshCw } from 'lucide-react';
 import { PRODUCTS } from '../data/badmintonData';
 import { useLanguage } from '../context/LanguageContext';
 
